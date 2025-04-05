@@ -130,6 +130,12 @@ LOCATIONS_DICT = {
         "flag": "🇪🇨",
         "subdomain": "ucloud"
     },
+    "ES": {
+        "country": "Spain",
+        "phone_number": "34",
+        "flag": "🇪🇸",
+        "subdomain": "ecloud"
+    },
     "FJ": {
         "country": "Fiji",
         "phone_number": "679",
