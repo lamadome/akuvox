@@ -11,16 +11,14 @@ class DoorLogPoller:
 
     hass: HomeAssistant
     async_retrieve_personal_door_log = None
-    interval: int = 20
+    interval: int = 300  # 5 minutes polling to reduce network load
     is_polling: bool = False
-    max_consecutive_errors: int = 5
-    consecutive_errors: int = 0
 
     def __init__(self,
                  hass: HomeAssistant,
                  poll_function,
-                 interval=60):
-        """Initialize the poller for tghe personal door log API."""
+                 interval=300):  # 5 minutes by default
+        """Initialize the poller for the personal door log API."""
         self.hass = hass
         self.async_retrieve_personal_door_log = poll_function
         self.interval = interval
@@ -30,9 +28,8 @@ class DoorLogPoller:
         """Start polling the personal door log."""
         if self.async_retrieve_personal_door_log:
             if not self.is_polling:
-                LOGGER.debug("🔄 Polling user's personal door log every %s second%s.",
-                             str(self.interval),
-                             "" if self.interval == 0 else "s")
+                LOGGER.info("🔄 Polling user's personal door log every %s seconds (reduced frequency to avoid router issues)",
+                           str(self.interval))
                 self.is_polling = True
                 self._task = asyncio.create_task(
                     self.async_retrieve_personal_door_log()) # type: ignore
@@ -47,3 +44,5 @@ class DoorLogPoller:
                 await self._task
             except asyncio.CancelledError:
                 LOGGER.debug("Polling task cancelled")
+            except Exception as e:
+                LOGGER.error("Error when cancelling polling task: %s", str(e))

@@ -24,15 +24,39 @@ async def async_setup_entry(hass, entry, async_add_devices):
     store = storage.Store(hass, 1, DATA_STORAGE_KEY)
     device_data: dict = await store.async_load() # type: ignore
     door_keys_data = device_data["door_keys_data"]
-    date_format = "%d-%m-%Y %H:%M:%S"
 
     entities = []
     for door_key_data in door_keys_data:
         key_id = door_key_data["key_id"]
         description = door_key_data["description"]
         key_code=door_key_data["key_code"]
-        begin_time = datetime.strptime(str(door_key_data["begin_time"]), date_format)
-        end_time = datetime.strptime(str(door_key_data["end_time"]), date_format)
+        
+        # Try multiple date formats to handle different API responses
+        begin_time_str = str(door_key_data["begin_time"])
+        end_time_str = str(door_key_data["end_time"])
+        
+        # Try to parse date with multiple formats
+        begin_time = end_time = None
+        date_formats = [
+            "%d-%m-%Y %H:%M:%S",  # Original format
+            "%Y-%m-%d %H:%M:%S",  # New format observed in error logs
+            "%Y/%m/%d %H:%M:%S",  # Another possible format
+        ]
+        
+        for format in date_formats:
+            try:
+                begin_time = datetime.strptime(begin_time_str, format)
+                end_time = datetime.strptime(end_time_str, format)
+                LOGGER.debug("✅ Successfully parsed dates with format: %s", format)
+                break
+            except ValueError:
+                continue
+        
+        if begin_time is None or end_time is None:
+            LOGGER.error("❌ Could not parse dates for key %s: %s and %s", 
+                       key_id, begin_time_str, end_time_str)
+            continue  # Skip this door key if dates can't be parsed
+        
         allowed_times=door_key_data["allowed_times"]
         access_times=door_key_data["access_times"]
         qr_code_url=door_key_data["qr_code_url"]
